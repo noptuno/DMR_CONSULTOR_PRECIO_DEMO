@@ -20,7 +20,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.ContextCompat;
 import com.airbnb.lottie.LottieAnimationView;
-import com.example.tata_consultor.Clases.Producto;
+import com.example.tata_consultor.BaseDatos.ProductoDB;
+import com.example.tata_consultor.Clases.ProductoDemo;
 import com.google.gson.Gson;
 import java.io.IOException;
 import okhttp3.Call;
@@ -86,29 +87,27 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         try {
-                                EnableDialog(true, "cargando");
-                                String a = "{\n" +
-                                        "\"Codigo\": \"250490000\",\n" +
-                                        "\"Nombre\": \"YERBA COMPUESTA SERENA CANARIA 1.00 K\",\n" +
-                                        "\"Moneda\": \"moneda\",\n" +
-                                        "\"Precio\": \"195.00\",\n" +
-                                        "\"CodBarras\": \"7730241010294\",\n" +
-                                        "\"Prioridad\": \"C\",\n" +
-                                        "\"Aux\": \"\"\n" +
-                                        "}";
-                                Gson g = new Gson();
-                                Producto p = g.fromJson(a, Producto.class);
-                                p.setEstado("NO");
-                                mostrar_datos_view(p);
-
-                                try {
-                                    Thread.sleep(2000);
-                                } catch (InterruptedException e) {
-                                    e.printStackTrace();
-                                }
+                            EnableDialog(true, "cargando");
+                            String a = "{\n" +
+                                    "\"codigoProducto\": \"357\",\n" +
+                                    "\"codigoEan\": \"7730241010294\",\n" +
+                                    "\"descripcion\": \"Descripción del producto ejemplo \",\n" +
+                                    "\"precio\": \"200\"\n" +
+                                    "}";
 
 
-                                 EnableDialog(false, "mostrando");
+                            Gson g = new Gson();
+                            ProductoDemo p = g.fromJson(a, ProductoDemo.class);
+                            mostrar_datos_view(p);
+
+                            try {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+
+                            EnableDialog(false, "mostrando");
 
 
                         } catch (Exception e) {
@@ -141,7 +140,7 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
 
                 //  showlinearprecio();
 
-             // EnableDialog(true,"cargando",false);
+                // EnableDialog(true,"cargando",false);
 
             }
         });
@@ -151,8 +150,8 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 //  hidelinearprecio();
-               // delayedHide(AUTO_HIDE_DELAY_MILLIS);
-               // EnableDialog(true,"mostrando",false);
+                // delayedHide(AUTO_HIDE_DELAY_MILLIS);
+                // EnableDialog(true,"mostrando",false);
 
             }
         });
@@ -182,9 +181,10 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
 
         String codigoimprimir = editcodigobarramanual.getText().toString().trim();
         if (!codigoimprimir.equals("")) {
+            ocultarteclado();
             request(codigoimprimir);
             editcodigobarramanual.setText("");
-            ocultarteclado();
+
         }
         if (editcodigobarramanual.isFocused()) {
             ocultarteclado();
@@ -204,129 +204,44 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
 
     public void request(final String codigoverificar) {
 
-        runOnUiThread(new Runnable() {
+        Thread thread = new Thread() {
             @Override
             public void run() {
+                try {
 
-                Pickinghttp = new OkHttpClient();
-                MediaType mediaType = MediaType.parse("text/xml");
+                    EnableDialog(true, "cargando");
 
-                RequestBody body = RequestBody.create(mediaType, "");
+                     ProductoDB bdproducto = new ProductoDB(ConsultorPrecioActivity.this);
+                     ProductoDemo productoActual = bdproducto.Buscar_tabla_producto(codigoverificar);
 
-                RequestPicking = new Request.Builder()
-                        .url("https://precioonline.tata.com.uy/articulos.php?tipocodigo= "+ tipocodigo+ "&codigo=" + codigoverificar)
-                        .method("POST", body)
-                        .addHeader("Content-Type", "application/json")
-                        .build();
+                        if (productoActual!=null){
+                            mostrar_datos_view(productoActual);
 
-                EnableDialog(true, "cargando");
-
-                Pickinghttp.newCall(RequestPicking).enqueue(new Callback() {
-
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        e.printStackTrace();
-                        EnableDialog(false, "limpiando");
-                        DisplayPrintingStatusMessage("Conexion Fallo");
-                    }
-
-                    @Override
-                    public void onResponse(Call call, final Response response) throws IOException {
-
-                        if (response.isSuccessful()) {
                             try {
-                                final String myResponse = response.body().string();
-                                Gson g = new Gson();
-                                Producto a = g.fromJson(myResponse, Producto.class);
-                                a.setEstado("NO");
-
-                                if (!a.getNombre().equals(" ") || !a.getPrecio().equals(" ")|| !a.getNombre().isEmpty() || !a.getPrecio().isEmpty()){
-
-                                    mostrar_datos_view(a);
-
-                                }else{
-                                    DisplayPrintingStatusMessage("Producto NO registrado");
-                                }
-                                EnableDialog(false, "mostrando");
-                            } catch (IOException e) {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
                                 e.printStackTrace();
-                                EnableDialog(false, "limpiando");
                             }
-                        } else {
-                            DisplayPrintingStatusMessage("Error con la conexion Wifi.. Reintentar");
+
+                            EnableDialog(false, "mostrando");
+
+                        }else{
                             EnableDialog(false, "limpiando");
-
+                            DisplayPrintingStatusMessage("El producto no se encuentra en la base de datos");
                         }
-                    }
 
-                });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    EnableDialog(false, "limpiando");
+                }
             }
+        };
 
-        });
+        thread.start();
 
     }
 
-    public void requestPruebaMejorado(final String codigoverificar) {
 
-
-                Pickinghttp = new OkHttpClient();
-                MediaType mediaType = MediaType.parse("text/xml");
-
-                RequestBody body = RequestBody.create(mediaType, "");
-
-                RequestPicking = new Request.Builder()
-                        .url("https://precioonline.tata.com.uy/articulos.php?tipocodigo= "+ tipocodigo+ "&codigo=" + codigoverificar)
-                        .method("POST", body)
-                        .addHeader("Content-Type", "application/json")
-                        .build();
-
-               // EnableDialog(true, "cargando", false);
-
-                Pickinghttp.newCall(RequestPicking).enqueue(new Callback() {
-
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        e.printStackTrace();
-                       // EnableDialog(false, "limpiando", false);
-                        DisplayPrintingStatusMessage("Conexion Fallo");
-                    }
-
-                    @Override
-                    public void onResponse(Call call, final Response response){
-
-                        if (response.isSuccessful()) {
-
-                            try {
-                                final String myResponse = response.body().string();
-                                Gson g = new Gson();
-                                Producto a = g.fromJson(myResponse, Producto.class);
-                                a.setEstado("NO");
-
-                                if (!a.getNombre().equals(" ") || !a.getPrecio().equals(" ")|| !a.getNombre().isEmpty() || !a.getPrecio().isEmpty()){
-
-                                    mostrar_datos_view(a);
-
-                                }else{
-                                    DisplayPrintingStatusMessage("Producto NO registrado");
-                                }
-
-                                //EnableDialog(false, "mostrando", false);
-
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                //EnableDialog(false, "limpiando", false);
-                            }
-
-
-                        } else {
-                            DisplayPrintingStatusMessage("Error con la conexion Wifi.. Reintentar");
-                            //EnableDialog(false, "limpiando", false);
-
-                        }
-                    }
-
-                });
-    }
 
 
     void hidebarras() {
@@ -341,6 +256,7 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
             actionBar.hide();
         }
         visible = true;
+
     }
 
     public void EnableDialog(final boolean value, final String mensaje) {
@@ -441,37 +357,15 @@ public class ConsultorPrecioActivity extends AppCompatActivity {
 
     }
 
-    private void mostrar_datos_view(final Producto a) {
+    private void mostrar_datos_view(final ProductoDemo a) {
         m_handler.post(new Runnable() {
             public void run() {
-
-                if (a != null) {
-
-                    try {
-
-                        txtdescripcion1.setText(a.getNombre());
-                        txtcodigoproducto.setText(a.getCodigo());
-                        txtcodigobarraproducto.setText(a.getCodBarras());
+                        txtdescripcion1.setText(a.getDescripcion());
+                        txtcodigoproducto.setText(a.getCodigoProducto());
+                        txtcodigobarraproducto.setText(a.getCodigoEan());
                         txtprecioproducto.setText(a.getPrecio());
-
-
-
                         linearprecio.setBackground(ContextCompat.getDrawable(ConsultorPrecioActivity.this, R.drawable.ic_tag_60x30_amarillo));
 
-
-                    } catch (Exception e) {
-                        DisplayPrintingStatusMessage("No disponible");
-                        txtdescripcion1.setText("");
-                        txtdescripcion2.setText("");
-                        txtcodigoproducto.setText("");
-                        txtcodigobarraproducto.setText("");
-                        txtprecioproducto.setText("");
-
-                        // hidelinearprecio();
-                    }
-
-
-                }
             }// run()
         });
 

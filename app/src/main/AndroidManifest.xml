@@ -28,7 +28,7 @@
             </intent-filter>
 
         </activity>
-
+        <activity android:name=".Registro_Productos" />
         <activity
             android:name="com.example.tata_consultor.ConsultorPrecioActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
